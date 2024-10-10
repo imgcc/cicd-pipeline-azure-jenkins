@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: node-cicd-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: node-cicd-app
+  template:
+    metadata:
+      labels:
+        app: node-cicd-app
+    spec:
+      containers:
+      - name: node-cicd-app
+        image: <acr_login_server>/node-cicd-app:latest # Update with your Azure Container Registry login server
+        ports:
+        - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: node-cicd-service
+spec:
+  selector:
+    app: node-cicd-app
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 3000
+  type: LoadBalancer

@@ -1,0 +1,43 @@
+trigger:
+  - master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  ACR_LOGIN_SERVER: '<your_acr_login_server>'
+  ACR_REPO_NAME: 'node-cicd-app'
+
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.x'
+    addToPath: true
+
+- task: NodeTool@0
+  inputs:
+    versionSpec: '14.x'
+  displayName: 'Install Node.js'
+
+- script: |
+    npm install
+    npm run build
+  displayName: 'Build Node.js app'
+
+- task: Docker@2
+  inputs:
+    containerRegistry: '$(dockerRegistryServiceConnection)'
+    repository: '$(ACR_LOGIN_SERVER)/$(ACR_REPO_NAME)'
+    command: 'buildAndPush'
+    Dockerfile: 'Dockerfile'
+    tags: |
+      latest
+
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: '<AzureSubscriptionID>'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      az aks get-credentials --resource-group <aks-resource-group> --name <aks-cluster-name>
+      kubectl apply -f k8s-deployment.yaml
